@@ -1,6 +1,6 @@
 # Cluttered Omniglot data set
 
-This repository contains code to generate the Cluttered Omniglot data set and reproduce the results from our corresponding paper [One-Shot Segmentation in clutter](https://arxiv.org/abs/1803.09597).
+This repository contains code to generate the Cluttered Omniglot data set and reproduce the results from our corresponding paper [One-Shot Segmentation in Clutter](https://arxiv.org/abs/1803.09597).
 
 
 ### CONTENTS
@@ -14,8 +14,7 @@ To compare with the results in our paper, clutter levels of 4, 8, 16, 32, 64, 12
 Please stay tuned, we will upload our models and model checkpoints soon.
 
 #### Poster
-Our ICML poster
-
+![Our ICML poster](poster.pdf)
 
 ### Instructions
 
