@@ -14,7 +14,7 @@ To compare with the results in our paper, clutter levels of 4, 8, 16, 32, 64, 12
 Please stay tuned, we will upload our models and model checkpoints soon.
 
 #### Poster
-![Our ICML poster](poster.pdf)
+![Our ICML poster](poster.png)
 
 ### Instructions
 
