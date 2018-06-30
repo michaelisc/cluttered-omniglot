@@ -1,18 +1,12 @@
-import sys
-import glob
 import os
-import hashlib
-
 import pickle
+import hashlib
 
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 plt.rcParams['figure.figsize'] = (12.0, 12.0)
 from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-from PIL import ImageOps
 
 from joblib import Parallel, delayed
 
@@ -50,11 +44,9 @@ class DatasetGeneratorConfig():
     # Number of images per parallel job 
     JOBLENGTH = 2000
     
-    
-    
-    def __init__(self):
+    def set_drawer_split(self):
         
-            #split glot instances
+            #split char instances
         if self.DRAWER_SPLIT == 'train':
             self.LOW_INSTANCE = 0
             self.HIGH_INSTANCE = self.DRAWER_SPLIT_POINT
@@ -83,12 +75,12 @@ def rot_y(phi,theta,ptx,pty):
     return -np.sin(phi+theta)*ptx + np.cos(phi-theta)*pty
 
 # Apply affine transformations and scale characters for data augmentation
-def prepare_glot(some_glot, angle=20, shear=10, scale=2):
+def prepare_char(some_char, angle=20, shear=10, scale=2):
     phi = np.radians(np.random.uniform(-angle,angle))
     theta = np.radians(np.random.uniform(-shear,shear))
     a = scale**np.random.uniform(-1,1)
     b = scale**np.random.uniform(-1,1)
-    (x,y) = some_glot.size
+    (x,y) = some_char.size
     x = a*x
     y = b*y
     xextremes = [rot_x(phi,theta,0,0),rot_x(phi,theta,0,y),rot_x(phi,theta,x,0),rot_x(phi,theta,x,y)]
@@ -100,12 +92,12 @@ def prepare_glot(some_glot, angle=20, shear=10, scale=2):
 
     aff_bas = np.array([[a*np.cos(phi+theta), b*np.sin(phi-theta), -mnx],[-a*np.sin(phi+theta), b*np.cos(phi-theta), -mny],[0, 0, 1]])
     aff_prm = np.linalg.inv(aff_bas)
-    some_glot = some_glot.transform((int(mxx-mnx),int(mxy-mny)), 
+    some_char = some_char.transform((int(mxx-mnx),int(mxy-mny)), 
                                   method = Image.AFFINE, 
                                   data = np.ndarray.flatten(aff_prm[0:2,:]))
-    some_glot = some_glot.resize((int(32*(mxx-mnx)/105),int(32*(mxy-mny)/105)))
+    some_char = some_char.resize((int(32*(mxx-mnx)/105),int(32*(mxy-mny)/105)))
     
-    return some_glot
+    return some_char
 
 # Crop scaled images to character size
 def crop_image(image):
@@ -133,7 +125,7 @@ def crop_image(image):
     return cropped_image
 
 # Color characters with a random RGB color
-def color_glot(tmp_im):
+def color_char(tmp_im):
     size = tmp_im.size
     tmp_im = tmp_im.convert('RGBA')
     tmp_arr = np.asarray(tmp_im)
@@ -152,10 +144,10 @@ def color_glot(tmp_im):
 ### Define Image Generation Functions
 
 # Generate one image with clutter
-def make_cluttered_image(glots, glot, n_distractors, config, verbose=0):
+def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
     '''Inputs:
-    glots: Dataset of characters
-    glot: target character
+    chars: Dataset of characters
+    char: target character
     nclutt: number of distractors
     empty: if True do not include target character'''
     
@@ -169,14 +161,14 @@ def make_cluttered_image(glots, glot, n_distractors, config, verbose=0):
         #generate background clutter
         for j in range(0,n_distractors):
             # draw random character instance
-            rnd_char = np.random.randint(0,len(glots))
+            rnd_char = np.random.randint(0,len(chars))
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
-            some_glot = glots[rnd_char][rnd_ind]
+            some_char = chars[rnd_char][rnd_ind]
             try:
                 # augment random character
-                tmp_im = prepare_glot(some_glot)
+                tmp_im = prepare_char(some_char)
                 tmp_im = crop_image(tmp_im)
-                tmp_im = color_glot(tmp_im)
+                tmp_im = color_char(tmp_im)
             except:
                 if verbose > 0:
                     print('Error generating distractors')
@@ -190,22 +182,22 @@ def make_cluttered_image(glots, glot, n_distractors, config, verbose=0):
         # if empty: draw another random character instead of the target
         empty = np.random.random() < config.EMPTY
         if empty:
-            rnd_char = np.random.randint(0,len(glots))
+            rnd_char = np.random.randint(0,len(chars))
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
-            glot = glots[rnd_char][rnd_ind]
+            char = chars[rnd_char][rnd_ind]
         
         try:
             # augment target character
-            glt_im = prepare_glot(glot) #transform glot
-            glt_im = crop_image(glt_im) #crop glot
+            glt_im = prepare_char(char) #transform char
+            glt_im = crop_image(glt_im) #crop char
             glt_im_bw = glt_im
-            glt_im = color_glot(glt_im) #color glot
+            glt_im = color_char(glt_im) #color char
         except:
             if verbose > 0:
                 print('Error augmenting target character')
             continue
 
-        # place augmentad target glot        
+        # place augmentad target char        
         left = np.random.randint(0,im.size[0]-glt_im.size[0]+1)
         upper = np.random.randint(0,im.size[1]-glt_im.size[1]+1)
         im.paste(glt_im, (left, upper), mask = glt_im)
@@ -218,14 +210,14 @@ def make_cluttered_image(glots, glot, n_distractors, config, verbose=0):
         # generate occlusion
         for j in range(0,config.OCCLUDERS):
             # draw random character
-            rnd_char = np.random.randint(0,len(glots))
+            rnd_char = np.random.randint(0,len(chars))
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
-            some_glot = glots[rnd_char][rnd_ind]
+            some_char = chars[rnd_char][rnd_ind]
             try:
                 # augment occluding character
-                tmp_im = prepare_glot(some_glot)
+                tmp_im = prepare_char(some_char)
                 tmp_im = crop_image(tmp_im)
-                tmp_im = color_glot(tmp_im)
+                tmp_im = color_char(tmp_im)
             except:
                 if verbose > 0:
                     print('Error generating occlusion')
@@ -245,10 +237,10 @@ def make_cluttered_image(glots, glot, n_distractors, config, verbose=0):
         
     return im, seg
 
-def make_target(glots, glot, config, verbose=0):
+def make_target(chars, char, config, verbose=0):
     '''Inputs:
-    glots: Dataset of characters
-    glot: target character'''
+    chars: Dataset of characters
+    char: target character'''
     
     # Legacy while loop to generate multiple targets for data augemntation
     # Multiple targets did not improve performance in our experiments
@@ -260,9 +252,9 @@ def make_target(glots, glot, config, verbose=0):
             im = Image.new('RGBA', (config.TARGET_WIDTH,config.TARGET_HEIGHT), (0,0,0,255))
 
             # augment target character (no scaling is applied)
-            glt_im = prepare_glot(glot, angle=config.MAX_ROTATION, shear=config.MAX_SHEAR, scale=1) #transform glot
-            glt_im = crop_image(glt_im) #crop glot
-            glt_im = color_glot(glt_im) #color glot
+            glt_im = prepare_char(char, angle=config.MAX_ROTATION, shear=config.MAX_SHEAR, scale=1) #transform char
+            glt_im = crop_image(glt_im) #crop char
+            glt_im = color_char(glt_im) #color char
 
             #place target character        
             left = (im.size[0]-glt_im.size[0])//2
@@ -281,12 +273,12 @@ def make_target(glots, glot, config, verbose=0):
         
     return im
 
-def make_image(glots, 
+def make_image(chars, 
                k, 
                config,
                seed=None):
     '''Inputs:
-    glots: Dataset of characters
+    chars: Dataset of characters
     angle: legacy
     shear: legacy
     scale: legacy
@@ -305,19 +297,19 @@ def make_image(glots,
     
     for i in range(config.JOBLENGTH):
         
-        #select a glot
-        glot_char = np.random.randint(0,len(glots))
-        glot_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
-        glot = glots[glot_char][glot_ind]
+        #select a char
+        char_char = np.random.randint(0,len(chars))
+        char_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
+        char = chars[char_char][char_ind]
         
         # choose random number of distractors for datasets with varying clutter
         # selects the one fixed number of distractors in other cases
         n_distractors = np.random.choice(config.DISTRACTORS)
         #generate images and segmentation masks
-        ims, seg = make_cluttered_image(glots, glot, n_distractors, config)
+        ims, seg = make_cluttered_image(chars, char, n_distractors, config)
 
         #generate targets
-        tar = make_target(glots, glot, config)
+        tar = make_target(chars, char, config)
         
         # Append to dataset
         r_ims[i,:,:,:] = ims
@@ -332,7 +324,7 @@ def make_image(glots,
 
 def generate_dataset(path, 
                      dataset_size, 
-                     glots,
+                     chars,
                      config,
                      seed=None,
                      save=True, 
@@ -342,8 +334,8 @@ def generate_dataset(path,
     '''Inputs:
     path: Save path
     N: number of images
-    glots: Dataset of characters
-    glot_locs: legacy
+    chars: Dataset of characters
+    char_locs: legacy
     split: train/val split of drawer instances
     save: If True save dataset to path
     show: If true plot generated images'''
@@ -367,7 +359,7 @@ def generate_dataset(path,
         np.random.seed(seed)
         print('Seed fixed')
     seeds = np.unique(np.random.randint(2**32, size=2*M))
-    results = Parallel(n_jobs=-1, verbose=50)(delayed(make_image)(glots,
+    results = Parallel(n_jobs=-1, verbose=50)(delayed(make_image)(chars,
                k, 
                config,
                seed=seeds[k]) for k in range(M))
@@ -408,16 +400,17 @@ def generate_dataset(path,
             plt.show()
 
 
-    print(time.time()-t)
+    print("Duration:", time.time()-t)
     
     # Test checksum
     last_image = data_ims[-1,...]
-    # print(hashlib.md5(last_image).digest())
+    print("Hash:", hashlib.md5(last_image).digest())
     if checksum:
         if hashlib.md5(last_image).digest() == checksum:
             print("Dataset was correctly created!")
         else:
             print("Incorrect hash value!")
+            
     
     
 ### Data loader
