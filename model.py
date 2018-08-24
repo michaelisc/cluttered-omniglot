@@ -171,7 +171,7 @@ def load_dataset_train(dataset_dir):
     
     return ims_train, seg_train, tar_train
 
-def load_dataset_val(dataset_dir, subset, old_notation=False):
+def load_dataset_val(dataset_dir, subset):
     
     if subset == 'train':
         #load val_train data
@@ -185,6 +185,30 @@ def load_dataset_val(dataset_dir, subset, old_notation=False):
         #load val_eval data
 
         path = dataset_dir + 'val-one-shot/'
+        ims_val = np.load(path + 'images.npy')
+        seg_val = np.load(path + 'segmentation.npy')
+        tar_val = np.load(path + 'targets.npy') 
+        
+    else:
+        print(subset + ' is not a valid subset')
+    
+    return ims_val, seg_val, tar_val
+
+
+def load_dataset_test(dataset_dir, subset):
+    
+    if subset == 'train':
+        #load val_train data
+
+        path = dataset_dir + 'test-train/'
+        ims_val = np.load(path + 'images.npy')
+        seg_val = np.load(path + 'segmentation.npy')
+        tar_val = np.load(path + 'targets.npy')
+        
+    elif subset == 'eval':
+        #load val_eval data
+
+        path = dataset_dir + 'test-one-shot/'
         ims_val = np.load(path + 'images.npy')
         seg_val = np.load(path + 'segmentation.npy')
         tar_val = np.load(path + 'targets.npy') 
@@ -454,8 +478,8 @@ def evaluation(dataset_dir,
         
         #Load dataset
         print('Loading dataset: ' + dataset_dir)
-        ims_val_train, seg_val_train, tar_val_train = load_dataset_val(dataset_dir, subset='train')
-        ims_val_eval, seg_val_eval, tar_val_eval = load_dataset_val(dataset_dir, subset='eval')
+        ims_val_train, seg_val_train, tar_val_train = load_dataset_test(dataset_dir, subset='train')
+        ims_val_eval, seg_val_eval, tar_val_eval = load_dataset_test(dataset_dir, subset='eval')
         print('Done loading dataset')
         
         #Define training parameters
