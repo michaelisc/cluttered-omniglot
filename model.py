@@ -3,13 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import sys
+import os
+import time
 
 slim = tf.contrib.slim
 
-TRANSFORMER_MODELS_PATH = '/gpfs01/bethge/home/cmichaelis/tf-models/transformer/'
-if TRANSFORMER_MODELS_PATH not in sys.path:
-    sys.path.append(TRANSFORMER_MODELS_PATH)
-from spatial_transformer import transformer
+# from spatial_transformer import transformer
 
 
 
@@ -198,7 +197,7 @@ def load_dataset_val(dataset_dir, subset, old_notation=False):
 def make_batch(batch_size, ims, seg, tar, perms=np.zeros(10), step=0):
     images_batch = np.zeros((batch_size,ims.shape[1],ims.shape[2],3))
     labels_batch = np.zeros((batch_size,ims.shape[1],ims.shape[2],1))
-    target_batch = np.zeros((batch_size,tar.shape[2],tar.shape[3],3))
+    target_batch = np.zeros((batch_size,tar.shape[1],tar.shape[2],3))
     
     if all(perms == 0):
         perms = np.random.permutation(tar.shape[0])
@@ -209,14 +208,14 @@ def make_batch(batch_size, ims, seg, tar, perms=np.zeros(10), step=0):
         index = perms[step*batch_size+i]
         images_batch[i,:,:,:] = ims[index,:,:,:]
         labels_batch[i,:,:,:] = seg[index,:,:,:]
-        target_batch[i,:,:,:] = tar[index,ntarget_index,:,:,:]
+        target_batch[i,:,:,:] = tar[index,:,:,:]
     
     return images_batch, target_batch, labels_batch
 
 #IoU claculation routine
 def calculate_IoU(segmentations, labels, threshold=0.3):
     pred = tf.squeeze(labels, axis=-1)
-    seg_softmax = tf.nn.softmax(segmentations, dim=-1)
+    seg_softmax = tf.nn.softmax(segmentations, axis=-1)
     seg = tf.cast(seg_softmax[...,1] > threshold, tf.int32)
     IoU = tf.reduce_sum(pred*seg, axis=(1,2))/(tf.reduce_sum(pred, axis=(1,2))+tf.reduce_sum(seg, axis=(1,2))-tf.reduce_sum(pred*seg, axis=(1,2)))
     clean_IoU = tf.where(tf.is_nan(IoU), tf.ones_like(IoU), IoU) #Remove NaNs which appear when the target does not exist
@@ -229,9 +228,15 @@ def calculate_IoU(segmentations, labels, threshold=0.3):
 def training(dataset_dir, 
              logdir, 
              epochs, 
+             model='siamese-u-net',
+             feature_maps=24,
+             batch_size=250,
              learning_rate=0.0005, 
              initial_training=True, 
              maximum_number_of_steps=0):
+    
+    # Currently only the siamese-u-net is implemented
+    assert model in ['siamese-u-net', 'mask_net']
     
     with tf.Graph().as_default():
         
@@ -250,7 +255,7 @@ def training(dataset_dir,
         print('Done loading dataset')
         
         #Define training parameters
-        batch_size = 250
+        batch_size = batch_size
         max_steps = tar_train.shape[0]//batch_size
         if maximum_number_of_steps != 0:
             print('Going to run for %.d steps'%(np.min([epochs*max_steps, maximum_number_of_steps])))
@@ -271,15 +276,18 @@ def training(dataset_dir,
         #generate tensorflow placeholders and variables
         images = tf.placeholder(tf.float32, shape=[batch_size,ims_train.shape[1],ims_train.shape[2],3], name='images')
         labels = tf.placeholder(tf.int32, shape=[batch_size,ims_train.shape[1],ims_train.shape[2],1], name='labels')
-        targets = tf.placeholder(tf.float32, shape=[batch_size,tar_train.shape[2],tar_train.shape[3],3], name='targets')
+        targets = tf.placeholder(tf.float32, shape=[batch_size,tar_train.shape[1],tar_train.shape[2],3], name='targets')
         learn_rate = tf.Variable(learning_rate)
         
         #preprocess images
-        targets = (target - mean)/std
-        images = (image - mean)/std
+        targets = (targets - mean)/std
+        images = (images - mean)/std
         
         #get predictions
-        segmentations = siamese_u_net(targets, images, feature_maps=24)
+        if model == 'siamese-u-net':
+            segmentations = siamese_u_net(targets, images, feature_maps=feature_maps)
+        elif model == 'mask_net':
+            segmentations = mask_net(targets, images, feature_maps=feature_maps)
         
         #Update batch norm
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -431,7 +439,13 @@ def _get_shift_xy(image):
 #Network training
 def evaluation(dataset_dir, 
                logdir,
+               model='siamese-u-net',
+               feature_maps=24,
+               batch_size=250,
                threshold=0.3):
+    
+    # Currently only the siamese-u-net is implemented
+    assert model in ['siamese-u-net', 'mask_net']
     
     with tf.Graph().as_default():
         
@@ -445,7 +459,7 @@ def evaluation(dataset_dir,
         print('Done loading dataset')
         
         #Define training parameters
-        batch_size = 250
+        batch_size = batch_size
         max_steps = tar_val_train.shape[0]//batch_size
         
         #Get dataset information and statistics
@@ -462,20 +476,23 @@ def evaluation(dataset_dir,
         #generate tensorflow placeholders and variables
         images = tf.placeholder(tf.float32, shape=[batch_size,ims_val_train.shape[1],ims_val_train.shape[2],3], name='images')
         labels = tf.placeholder(tf.int32, shape=[batch_size,ims_val_train.shape[1],ims_val_train.shape[2],1], name='labels')
-        targets = tf.placeholder(tf.float32, shape=[batch_size,tar_val_train.shape[2],tar_val_train.shape[3],3], name='targets')
+        targets = tf.placeholder(tf.float32, shape=[batch_size,tar_val_train.shape[1],tar_val_train.shape[1],3], name='targets')
         
         #preprocess images
         targets = (targets - mean)/std
         images = (images - mean)/std
         
         #get predictions
-        segmentations = siamese_u_net(targets, images, feature_maps=24)
+        if model == 'siamese-u-net':
+            segmentations = siamese_u_net(targets, images, feature_maps=feature_maps)
+        elif model == 'mask_net':
+            segmentations = mask_net(targets, images, feature_maps=feature_maps)
         
 
         #Calculate metrics: IoU
         mean_IoU = calculate_IoU(segmentations, labels, threshold=threshold)
         #Calculate metrics: Localization Accuracy
-        seg_softmax = tf.nn.softmax(segmentations, dim=-1)
+        seg_softmax = tf.nn.softmax(segmentations, axis=-1)
         seg = tf.expand_dims(tf.cast(seg_softmax[...,1] > threshold, tf.float32), axis=-1)
         lcomx, lcomy = _center_of_mass(tf.cast(labels, tf.float32))
         comx, comy = _center_of_mass(seg)
