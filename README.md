@@ -11,7 +11,11 @@ The Cluttered Omniglot data set contains training, evaluation and test sets for 
 To compare with the results in our paper, clutter levels of 4, 8, 16, 32, 64, 128 and 256 should be used. For evaluation only the validation set with training characters should be used during model optimization and training (including hyperparameter search).
 
 #### Experiments
-Please stay tuned, we will upload our models and model checkpoints soon.
+The Siamese-U-Net baseline consists of two identical encoders for the target and the scene and a mirrored decoder with skip connections. Currently one model is trained per clutter level but we will try to train one model jointly on all clutter levels. 
+
+MaskNet uses a two-stage approach generating segmentation proposals in the first stage to generate candidate segmentations and subsequently a second encoding stage to compare each of these segmentations to the target. 
+
+Please stay tuned, we will upload toe code for MaskNet and corresponding checkpoints soon.
 
 #### Poster
 ![Our ICML poster](poster.png)
@@ -23,6 +27,8 @@ Requires scipy, numpy, pillow, urllib, zipfile, matplotlib and joblib
 
 To generate the data first run the get_omniglot.ipynb notebook, to download, extract and convert the original Omniglot dataset. Then run the generate_dataset.ipynb notebook to generate training, validation and test splits for all clutter levels used in the paper (4, 8, 16, 32, 64, 128, 256 characters). Fixed seeds and checksums are included to verify the final outputs for the validation and test sets.
 WARNING: The dataset is quite large (>500GB) and requires large amounts of RAM to generate. The generation of the training set might therefore be split into multiple parts. An automatic solution for this will be provided in the future.
+
+Code to train the Siamese-U-Net baseline as used in the paper can be found in the corresponding siamese-u-net.ipynb notebook. To reproduce the results form the paper a batch size of 250, a leraning rate of 0.0005 and feature_maps = 24 should be selected. For GPU training a GPU with >12GB of memory is needed.
 
 
 ### Citing this data set
