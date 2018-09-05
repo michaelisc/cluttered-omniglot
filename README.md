@@ -10,6 +10,9 @@ The Cluttered Omniglot data set contains training, evaluation and test sets for 
 
 To compare with the results in our paper, clutter levels of 4, 8, 16, 32, 64, 128 and 256 should be used. For evaluation only the validation set with training characters should be used during model optimization and training (including hyperparameter search).
 
+-- Important Update 5. Sept. 2018 --
+Due to a bug in the dataset generation the number of distractors per image was randomly sampled instead of fixed and thus on average too low. The valid benchmark using the same data generation as in the paper is the one which can be created with the code and checksums updated on the 5th of September 2018. If you use an older version of the dataset please update the test splits accordingly.
+
 #### Experiments
 The Siamese-U-Net baseline consists of two identical encoders for the target and the scene and a mirrored decoder with skip connections. Currently one model is trained per clutter level but we will try to train one model jointly on all clutter levels. 
 
