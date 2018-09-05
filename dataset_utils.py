@@ -159,7 +159,8 @@ def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
         seg = Image.new('RGBA', (config.IMAGE_WIDTH,config.IMAGE_HEIGHT), (0,0,0,255))
         
         #generate background clutter
-        for j in range(0,n_distractors):
+        j = 0
+        while j < n_distractors:
             # draw random character instance
             rnd_char = np.random.randint(0,len(chars))
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
@@ -169,6 +170,7 @@ def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
                 tmp_im = prepare_char(some_char)
                 tmp_im = crop_image(tmp_im)
                 tmp_im = color_char(tmp_im)
+                j = j+1
             except:
                 if verbose > 0:
                     print('Error generating distractors')
@@ -186,16 +188,19 @@ def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
             char = chars[rnd_char][rnd_ind]
         
-        try:
-            # augment target character
-            glt_im = prepare_char(char) #transform char
-            glt_im = crop_image(glt_im) #crop char
-            glt_im_bw = glt_im
-            glt_im = color_char(glt_im) #color char
-        except:
-            if verbose > 0:
-                print('Error augmenting target character')
-            continue
+        j = 0
+        while j < 1:
+            try:
+                # augment target character
+                glt_im = prepare_char(char) #transform char
+                glt_im = crop_image(glt_im) #crop char
+                glt_im_bw = glt_im
+                glt_im = color_char(glt_im) #color char
+                j = j+1
+            except:
+                if verbose > 0:
+                    print('Error augmenting target character')
+                continue
 
         # place augmentad target char        
         left = np.random.randint(0,im.size[0]-glt_im.size[0]+1)
@@ -208,7 +213,8 @@ def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
         
         
         # generate occlusion
-        for j in range(0,config.OCCLUDERS):
+        j = 0
+        while j < config.OCCLUDERS:
             # draw random character
             rnd_char = np.random.randint(0,len(chars))
             rnd_ind = np.random.randint(config.LOW_INSTANCE,config.HIGH_INSTANCE)
@@ -218,6 +224,7 @@ def make_cluttered_image(chars, char, n_distractors, config, verbose=0):
                 tmp_im = prepare_char(some_char)
                 tmp_im = crop_image(tmp_im)
                 tmp_im = color_char(tmp_im)
+                j = j + 1
             except:
                 if verbose > 0:
                     print('Error generating occlusion')
@@ -304,7 +311,7 @@ def make_image(chars,
         
         # choose random number of distractors for datasets with varying clutter
         # selects the one fixed number of distractors in other cases
-        n_distractors = np.random.choice(config.DISTRACTORS)
+        n_distractors = np.random.choice([config.DISTRACTORS])
         #generate images and segmentation masks
         ims, seg = make_cluttered_image(chars, char, n_distractors, config)
 
