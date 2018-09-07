@@ -196,7 +196,7 @@ def siamese_u_net(targets, images, feature_maps=24, threshold=0.3):
 
 ### MaskNet ###
 
-def mask_net(targets, images, labels=None, feature_maps=24, training=False, threshold=0.3):
+def mask_net(targets, images, labels=None, feature_maps=24, training=False, threshold=0.3, rgb_mean=127, rgb_std=127):
     
     #encode target
     targets_encoded, _ = encoder(targets, 
@@ -335,7 +335,7 @@ def mask_net(targets, images, labels=None, feature_maps=24, training=False, thre
         crop.set_shape([batch_size,tx,ty,1])
         # Center and Normalize the crop for the discriminator
         crop = crop * 255
-        crop = (crop - 127)/127
+        crop = (crop - rgb_mean)/rgb_std
         # Map crop to RGB space
         crop = tf.tile(crop, [1,1,1,3])
 
@@ -537,7 +537,8 @@ def training(dataset_dir,
                 final_labels = tf.concat([final_labels, tf.zeros_like(final_labels)], axis=1)
             elif train_mode == 'discriminator':
                 segmentations, scores, score_labels = mask_net(targets, images, labels, 
-                                                               feature_maps=feature_maps, training=train_mode)
+                                                               feature_maps=feature_maps, training=train_mode, 
+                                                               rgb_mean=mean, rgb_std=std)
                 final_labels = labels
         
         #Update batch norm
@@ -744,7 +745,7 @@ def evaluation(dataset_dir,
         if model == 'siamese-u-net':
             segmentations = siamese_u_net(targets, images, feature_maps=feature_maps)
         elif model == 'mask-net':
-            segmentations = mask_net(targets, images, feature_maps=feature_maps, training=False)
+            segmentations = mask_net(targets, images, feature_maps=feature_maps, training=False, rgb_mean=mean, rgb_std=std)
         
 
         #Calculate metrics: IoU

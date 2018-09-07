@@ -18,7 +18,7 @@ The Siamese-U-Net baseline consists of two identical encoders for the target and
 
 MaskNet uses a two-stage approach generating segmentation proposals in the first stage to generate candidate segmentations and subsequently a second encoding stage to compare each of these segmentations to the target. 
 
-The code for Siamese-U-Net and MaskNet are online now. Please stay tuned for the pre-trained checkpoints which we will upload soon.
+The code for Siamese-U-Net and MaskNet are online now. Checkpoints can be automatically downloaded and extracted using the reproduce_results.ipynb or downloaded separately for [Siamese-U-Net](https://dl.dropbox.com/s/bm625f6ns04g4ea/siamese_u_net_checkpoints.zip) and [MaskNet](https://dl.dropbox.com/s/sc8pevf2h6152i0/mask_net_checkpoints.zip).
 
 #### Poster
 ![Our ICML poster](poster.png)
