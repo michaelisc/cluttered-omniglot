@@ -30,7 +30,7 @@ Our ICML 2018 poster, where our [paper was published](http://proceedings.mlr.pre
 
 ![Our ICML poster](poster_icml.png)
 
-Our VSS 2019 poster including human performance on cluttered omniglot and an overview of our follow up paper [One-Shot Instance Segmentation](https://arxiv.org/abs/1811.11507)([code](https://github.com/bethgelab/siamese-mask-rcnn)) in which we generalized the one-shot segmentation task to instsance segmentation on MS Coco. 
+Our VSS 2019 poster including human performance on cluttered omniglot and an overview of our follow up paper [One-Shot Instance Segmentation](https://arxiv.org/abs/1811.11507) ([code](https://github.com/bethgelab/siamese-mask-rcnn)) in which we generalized the one-shot segmentation task to instance segmentation on MS Coco. 
 
 ![VSS poster](poster_vss.png)
 
