@@ -20,8 +20,14 @@ MaskNet uses a two-stage approach generating segmentation proposals in the first
 
 The code for Siamese-U-Net and MaskNet are online now. Checkpoints can be automatically downloaded and extracted using the reproduce_results.ipynb or downloaded separately for [Siamese-U-Net](https://dl.dropbox.com/s/bm625f6ns04g4ea/siamese_u_net_checkpoints.zip) and [MaskNet](https://dl.dropbox.com/s/sc8pevf2h6152i0/mask_net_checkpoints.zip).
 
-#### Poster
-![Our ICML poster](poster.png)
+#### Posters
+Our ICML 2018 poster, where our [paper was published](http://proceedings.mlr.press/v80/michaelis18a.html):
+
+![Our ICML poster](poster_icml.png)
+
+Our VSS 2019 poster including human performance on cluttered omniglot and an overview of our follow up paper [One-Shot Instance Segmentation](https://arxiv.org/abs/1811.11507)([code](https://github.com/bethgelab/siamese-mask-rcnn)) in which we generalized the one-shot segmentation task to instsance segmentation on MS Coco. 
+
+![VSS poster](poster_vss.png)
 
 ### Instructions
 
